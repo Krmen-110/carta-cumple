@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Una carta va en camino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Caveat:wght@500;700&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0e1a2e;--land:#16253d;--line:#2c4166;--paper:#f3ead4;--red:#d6403a;--blue:#2a5bd7;--text:#e8edf6;--mute:#8fa2c2;--slime:#a6ff00}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:Fraunces,Georgia,serif;overflow-x:hidden}
+[hidden]{display:none!important}
+/* ---------- Seguimiento ---------- */
+.track{min-height:100%;max-width:1000px;margin:0 auto;padding:clamp(20px,4vw,48px);display:grid;gap:32px 48px;grid-template-columns:minmax(260px,400px) 1fr;align-items:start}
+.track header{grid-column:1/-1;padding-bottom:18px;border-bottom:8px solid transparent;border-image:repeating-linear-gradient(135deg,var(--red) 0 14px,#fff 14px 28px,var(--blue) 28px 42px,#fff 42px 56px) 8}
+h1{font-weight:600;font-size:clamp(2rem,6vw,3.6rem);line-height:1.05;letter-spacing:-.02em}
+header p{color:var(--mute);margin-top:10px;font-size:1.1rem}
+.map{width:100%;border:1px solid var(--line);border-radius:10px;background:#0a1424}
+.map text{font:13px Fraunces,Georgia,serif;fill:var(--text)}
+.map .dim text{fill:var(--mute)}
+.count{display:flex;gap:clamp(12px,3vw,28px);margin:4px 0 6px}
+.count div{text-align:left;min-width:56px}
+.count b{display:block;font-weight:600;font-size:clamp(2.2rem,7vw,3.8rem);line-height:1;font-variant-numeric:tabular-nums}
+.count span{color:var(--mute);font-size:.95rem}
+.pct{color:var(--mute);margin-bottom:14px}
+.skipwrap{min-height:56px;margin-bottom:18px}
+.skip{position:relative;z-index:10;touch-action:none;transition:left .28s ease,top .28s ease;white-space:nowrap}
+.skip.fly{position:fixed}
+.steps{list-style:none;padding:0;border-left:2px solid var(--line);margin-left:7px}
+.steps li{position:relative;padding:0 0 18px 24px;color:var(--mute);transition:color .4s}
+.steps li::before{content:"";position:absolute;left:-8px;top:5px;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid var(--line)}
+.steps li.done{color:var(--text)}
+.steps li.done::before{background:var(--red);border-color:var(--red)}
+.steps li.now{color:#fff}
+.steps li.now::before{background:#fff;border-color:var(--blue);box-shadow:0 0 0 5px rgba(42,91,215,.35)}
+.steps small{display:block;color:var(--mute)}
+.pulse{animation:pulse 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{50%{transform:scale(1.18)}}
+@media(max-width:760px){.track{grid-template-columns:1fr}}
+/* ---------- Sobre ---------- */
+.overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:20px;background:rgba(6,12,24,.94);animation:fade .8s}
+@keyframes fade{from{opacity:0}}
+.overlay h2{font-weight:600;font-size:clamp(1.8rem,6vw,3rem);text-align:center}
+.hint{color:var(--mute)}
+.env{position:relative;width:min(340px,82vw);aspect-ratio:3/2;border:0;border-radius:6px;cursor:pointer;margin-top:60px;
+background:repeating-linear-gradient(135deg,var(--red) 0 14px,#fff 14px 28px,var(--blue) 28px 42px,#fff 42px 56px);box-shadow:0 24px 60px rgba(0,0,0,.55);animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.env.open{animation:none}
+.env .in{position:absolute;inset:7px;background:#e6dbc0}
+.sheet{position:absolute;left:7%;width:86%;top:7%;height:88%;background:#fffdf5;transition:transform .8s .35s cubic-bezier(.3,.8,.3,1)}
+.env.open .sheet{transform:translateY(-58%)}
+.front{position:absolute;inset:0;background:var(--paper);clip-path:polygon(0 0,50% 56%,100% 0,100% 100%,0 100%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:9%}
+.front span{font-family:Caveat,cursive;font-size:clamp(1.3rem,5vw,1.8rem);color:#4a3b2a;font-weight:700}
+.flap{position:absolute;left:0;right:0;top:0;height:56%;background:#ebe0c5;clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top;transition:transform .7s,z-index 0s .35s;z-index:3}
+.env.open .flap{transform:rotateX(180deg);z-index:0}
+.stamp{position:absolute;right:12%;top:6%;width:34px;height:42px;border:2px dashed var(--red);background:rgba(214,64,58,.08);z-index:4;transition:opacity .3s}
+.env.open .stamp{opacity:0}
+.letterwrap{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,12,24,.85);overflow:auto}
+.letter{width:min(600px,100%);max-height:92vh;max-height:92dvh;overflow:auto;background:#fffdf5;color:#2b2a3a;border-radius:4px;padding:34px clamp(22px,5vw,48px) 28px;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:rise .8s cubic-bezier(.2,.8,.2,1);
+background-image:repeating-linear-gradient(transparent 0 31px,rgba(42,91,215,.16) 31px 32px);font-family:Caveat,cursive;font-size:1.65rem;line-height:32px}
+@keyframes rise{from{opacity:0;transform:translateY(60px) scale(.9)}}
+.letter h3{font-size:2.1rem;line-height:44px;color:var(--red);font-weight:700}
+.letter p{margin-bottom:32px}
+.letter .firma{text-align:right;margin:0}
+.btn{font:600 1rem Fraunces,Georgia,serif;border:0;border-radius:999px;padding:12px 28px;cursor:pointer;background:var(--red);color:#fff;text-decoration:none;display:inline-block}
+.btn:hover{filter:brightness(1.1)}
+.btn:focus-visible,.env:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.acts{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+.letter .btn{font-family:Fraunces,Georgia,serif}
+.btn.alt{background:transparent;color:var(--red);border:2px solid var(--red)}
+.rr{margin-bottom:18px}
+/* ---------- Billie ---------- */
+.billie{position:fixed;inset:0;z-index:40;background:#000;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:safe center;text-align:center;padding:24px;gap:18px;animation:fade 1.2s;
+background-image:radial-gradient(60% 50% at 15% 100%,rgba(31,59,255,.55),transparent 70%),radial-gradient(50% 45% at 90% 90%,rgba(166,255,0,.22),transparent 70%)}
+.goo{position:absolute;left:0;right:0;top:0;height:60%;filter:url(#goo);pointer-events:none}
+.goo i{position:absolute;top:-20px;background:var(--slime);border-radius:0 0 40px 40px;height:0;animation:drip var(--d) ease-in-out infinite alternate}
+.goo .bar{left:-5%;width:110%;height:46px;background:var(--slime);animation:none;border-radius:0}
+@keyframes drip{to{height:var(--h)}}
+.billie h2{position:relative;font:400 clamp(2.4rem,10vw,6.4rem)/.95 "Archivo Black",Impact,sans-serif;color:var(--slime);text-shadow:0 0 40px rgba(166,255,0,.45);margin-top:80px;text-transform:none}
+.billie .nm{position:relative;font:400 clamp(1.6rem,6vw,3.4rem) "Archivo Black",Impact,sans-serif;color:transparent;-webkit-text-stroke:2px #fff}
+.billie p{position:relative;color:#cfd8ff;max-width:34ch}
+.eq{position:relative;display:flex;gap:6px;align-items:flex-end;height:54px}
+.eq span{width:9px;height:100%;background:var(--slime);border-radius:3px;transform-origin:bottom;animation:eq 1s ease-in-out infinite alternate}
+.eq span:nth-child(2){animation-delay:-.3s}.eq span:nth-child(3){animation-delay:-.6s}.eq span:nth-child(4){animation-delay:-.15s}.eq span:nth-child(5){animation-delay:-.45s}
+@keyframes eq{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+.orb{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(120,150,255,.5),rgba(31,59,255,.05));animation:float var(--t) ease-in-out infinite alternate}
+@keyframes float{to{transform:translate(var(--x),-60px)}}
+.billie .row{position:relative;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.billie .btn{background:var(--slime);color:#000}
+.billie .btn.ghost{background:transparent;color:#fff;border:2px solid #fff}
+.billie{padding-bottom:calc(var(--s,110px) + 56px)}
+#sp{position:relative;width:min(440px,92vw);height:152px;border:0;border-radius:12px}
+.tile{position:fixed;z-index:50;width:var(--s);height:var(--s);border-radius:14px;border:3px solid var(--slime);display:grid;place-items:center;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25)),var(--img,none),linear-gradient(135deg,#1f3bff,#06102e);background-size:cover;background-position:center;
+box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 22px rgba(166,255,0,.3);font:400 calc(var(--s)*.62)/1 "Archivo Black",Impact,sans-serif;color:var(--slime);-webkit-text-stroke:3px #000;paint-order:stroke fill;transition:scale .15s}
+.tile.up{scale:1.1;cursor:grabbing;box-shadow:0 18px 40px rgba(0,0,0,.7),0 0 30px rgba(166,255,0,.5)}
+.tile.pol{width:calc(var(--s)*1.15);height:calc(var(--s)*1.35);border:6px solid #fff;border-bottom-width:22px;border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.pv{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:99;display:flex;gap:6px;padding:8px;background:#000c;border:1px solid #fff4;border-radius:12px;font:12px sans-serif;color:#fff;flex-wrap:wrap;justify-content:center;max-width:96vw}
+.pv button{font:12px sans-serif;padding:6px 10px;border-radius:8px;border:0;cursor:pointer}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="9"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/></filter></svg>
+
+<main class="track" id="track">
+  <header>
+    <h1>Tu carta va en camino</h1>
+    <p>De Tabasco a Monterrey, a la velocidad del Hombre-Carro</p>
+  </header>
+  <svg class="map" viewBox="0 0 400 560" role="img" aria-label="Mapa del recorrido de la carta">
+    <path d="M400,0 L330,40 L268,95 L228,150 L214,215 L224,275 L238,345 L285,405 L325,450 L345,495 L400,505 L400,560 L0,560 L0,0Z" fill="var(--land)" stroke="var(--line)"/>
+    <text x="300" y="250" fill="#3a5486" style="fill:#3a5486;font-style:italic">Golfo de México</text>
+    <path id="base" fill="none" stroke="var(--line)" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>
+    <path id="done" fill="none" stroke="var(--red)" stroke-width="4" stroke-linecap="round"/>
+    <g id="dots"></g>
+    <g id="mk"><circle r="16" fill="rgba(214,64,58,.25)" class="pulse"/><rect x="-11" y="-8" width="22" height="16" rx="2" fill="#fff"/><path d="M-11,-8 L0,2 L11,-8" fill="none" stroke="var(--red)" stroke-width="2"/></g>
+  </svg>
+  <section>
+    <div class="count" aria-live="off"><div><b id="d">0</b><span>días</span></div><div><b id="h">00</b><span>horas</span></div><div><b id="m">00</b><span>min</span></div><div><b id="s">00</b><span>seg</span></div></div>
+    <p class="pct" id="pct"></p>
+    <div class="skipwrap" id="skipw"><button class="btn skip" id="skip" type="button">Abrir ya</button></div>
+    <div class="rr" id="rr" hidden><button class="btn" id="reread" type="button">Leer mi carta otra vez</button></div>
+    <ol class="steps" id="steps"></ol>
+  </section>
+</main>
+
+<div class="overlay" id="stage" hidden>
+  <h2>Tu carta llegó</h2>
+  <p class="hint">Toca el sobre para abrirlo</p>
+  <button class="env" id="env" aria-label="Abrir el sobre">
+    <div class="in"><div class="sheet"></div><div class="front"><span id="to"></span></div><div class="flap"></div></div>
+    <div class="stamp"></div>
+  </button>
+</div>
+
+<div class="letterwrap" id="lw" hidden>
+  <article class="letter" id="letter"></article>
+</div>
+
+<div class="billie" id="billie" hidden>
+  <div class="goo" id="goo"><i class="bar"></i></div>
+  <h2>!!!!Feliz cumpleaños!!!!</h2>
+  <div class="nm" id="nm"></div>
+  <p>Dale play y mueve las letras de tu nombre.</p>
+  <div class="eq"><span></span><span></span><span></span><span></span><span></span></div>
+  <iframe id="sp" title="Música de Billie Eilish" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+  <div class="row">
+    <a class="btn" href="https://open.spotify.com/search/billie%20eilish" target="_blank" rel="noopener">Escuchar a Billie Eilish</a>
+    <button class="btn ghost" id="again">Volver a leer la carta</button>
+    <button class="btn ghost" id="save2">Descargar la carta</button>
+    <button class="btn ghost" id="reset">Formar mi nombre</button>
+    <button class="btn ghost" id="mus" hidden>Pausar música</button>
+    <button class="btn ghost" id="back">Ver el recorrido</button>
+  </div>
+</div>
+
+<script>
+/* ====== EDITA AQUÍ ====== */
+const C={
+  nombre:"Monce",
+  firma:`Un beso enorme,<br>Krmen x Monce`,   // firma al final de la carta
+  salida:"2026-09-28T10:00:00-06:00",   // cuándo "salió" la carta
+  llegada:"2026-10-02T09:00:00-06:00",  // cuándo llega (hora de México)
+  spotify:"https://open.spotify.com/embed/playlist/0fZm7ygIaFLpTX7AEd38WT?utm_source=generator&theme=0", // reproductor (puedes pegar otra canción o lista)
+  audio:"",                                   // opcional: ruta a un mp3 propio, ej. "musica/cancion.mp3"
+  fotos:["fotos/1.jpg","fotos/2.jpg","fotos/3.jpg","fotos/4.jpg","fotos/5.jpg"], // tus imágenes en la carpeta "fotos"
+  carta:[
+    `Holaaaaaaaa Monceeeeeeeeeeeeeeeeeeeeee!!`,
+    `Espero que estés pasando un lindo día hoy en tu cumpleaños. Querían que este día tuviera algo especial que no se pudiera abrir con un solo clic, así que mandé una carta que viajó desde Tabasco hasta Monterrey, kilómetro por kilómetro. "así que toca pagar peaje"`,
+    `Tal vez creas que es un poco raro que una persona que acabas de conocer tenga este tipo de detalles, pero siempre me he caracterizado por dar un regalo auténtico a cada persona que ha aportado algo a mi vida, y tú ya formas parte de ella. Gracias por ser de esas personas que hacen más ligero el día a día; ojalá este nuevo año te devuelva todo lo bueno que repartes sin darte cuenta.`,
+    `Y ¿por qué no hacerlo? Si eres una persona espectacular. Con lo poco que llevamos interactuando, he visto a una chica alegre, sonriente, auténtica y con ganas de lograr muchas cosas, de cumplir sus metas y sueños aun si el fracaso intenta interponerse. Tienes una voz espectacular y muchos talentos que están allí, pero que aún no ves o quizás escondes a propósito. Pero, «Krmen, ¿qué quieres decir con todo esto?». Buena pregunta, voz de mi cabeza.`,
+    `Lo que quiero expresar es que no quiero que nadie apague esa luz que tienes, ese brillo y esencia que te caracteriza; y que en cada cumpleaños, aparte de los regalos y felicitaciones, recuerdes que a pesar de las cosas buenas o malas, siempre, por y para siempre, serás tú.`,
+    `Por eso programé este pequeño rincón para ti, para que sin importar cuándo o dónde lo abras, recuerdes lo increíble que eres.`,
+    `Disfruta mucho tu día. Te lo mereces. ¡Feliz cum-pleaños!!!!!!, Monce!!! Que este nuevo año de vida esté lleno de momentos tan bonitos como tú. VA`
+  ]
+};
+/* ========================= */
+const $=id=>document.getElementById(id), T0=+new Date(C.salida), T1=+new Date(C.llegada);
+let skew=0; const now=()=>Date.now()+skew;
+const pts=[[310,498],[268,432],[205,352],[176,272],[168,200],[140,140],[108,72]];
+const names=["Tabasco","Coatzacoalcos","Veracruz","Tuxpan","Tampico","Cd. Victoria","Monterrey"];
+const msgs=["Tu carta salió de Tabasco","Pasó por Coatzacoalcos","Cruzó el puerto de Veracruz","Llegó a Tuxpan","Está en Tampico","Pasó por Ciudad Victoria","Entregada en Monterrey"];
+/* ruta suave (Catmull-Rom) */
+let dstr="M"+pts[0];
+for(let i=0;i<pts.length-1;i++){const a=pts[i-1]||pts[i],b=pts[i],c=pts[i+1],e=pts[i+2]||c;
+dstr+=` C${[b[0]+(c[0]-a[0])/6,b[1]+(c[1]-a[1])/6]} ${[c[0]-(e[0]-b[0])/6,c[1]-(e[1]-b[1])/6]} ${c}`}
+const base=$("base"),done=$("done");base.setAttribute("d",dstr);done.setAttribute("d",dstr);
+const L=base.getTotalLength();done.style.strokeDasharray=L;
+let cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));
+const fr=cum.map(v=>v/cum[cum.length-1]);
+$("dots").innerHTML=pts.map((_,i)=>{const q=base.getPointAtLength(fr[i]*L);return `<g class="dim"><circle cx="${q.x}" cy="${q.y}" r="5" fill="var(--ink)" stroke="var(--mute)" stroke-width="2"/><text x="${q.x+11}" y="${q.y+4}">${names[i]}</text></g>`}).join("");
+$("steps").innerHTML=msgs.map((m,i)=>`<li>${m}<small>${i<6?"":"Aquí termina el viaje"}</small></li>`).join("");
+const lis=[...document.querySelectorAll("#steps li")];
+/* carta */
+$("to").textContent="Para "+C.nombre;$("nm").textContent=C.nombre;
+$("letter").innerHTML=C.carta.map(t=>`<p>${t}</p>`).join("")+`<p class="firma">${C.firma}</p><div class="acts"><button class="btn" id="close">Cerrar</button><button class="btn alt" id="save">Descargar como imagen</button></div>`;
+/* gotas de slime */
+$("goo").insertAdjacentHTML("beforeend",Array.from({length:16},(_,i)=>`<i style="left:${i*6.4+Math.random()*3}%;width:${22+Math.random()*26}px;--h:${70+Math.random()*190}px;--d:${3+Math.random()*4}s"></i>`).join(""));
+$("billie").insertAdjacentHTML("beforeend",Array.from({length:9},()=>`<span class="orb" style="left:${Math.random()*95}%;top:${40+Math.random()*55}%;width:${30+Math.random()*80}px;height:${30+Math.random()*80}px;--t:${5+Math.random()*6}s;--x:${Math.random()*80-40}px"></span>`).join(""));
+/* estado */
+let shown=false;
+const pad=n=>String(n).padStart(2,"0");
+function tick(){
+  const t=now(),p=Math.min(1,Math.max(0,(t-T0)/(T1-T0)));
+  const q=base.getPointAtLength(p*L);$("mk").setAttribute("transform",`translate(${q.x},${q.y})`);
+  done.style.strokeDashoffset=L*(1-p);
+  let r=Math.max(0,T1-t);const s=Math.floor(r/1000);
+  $("d").textContent=Math.floor(s/86400);$("h").textContent=pad(Math.floor(s%86400/3600));$("m").textContent=pad(Math.floor(s%3600/60));$("s").textContent=pad(s%60);
+  $("pct").textContent=p>=1?"Entregada. Ya puedes abrirla.":`Recorrido: ${Math.floor(p*100)}%`;
+  let last=0;fr.forEach((f,i)=>{if(p>=f-1e-9)last=i});
+  lis.forEach((li,i)=>{li.className=i<last?"done":i==last?(p>=1?"done":"now"):""});
+  $("skipw").hidden=p>=1;$("rr").hidden=p<1;
+  if(p>=1&&!shown){shown=true;$("stage").hidden=false}
+  if(p<1&&shown){shown=false;[$("stage"),$("lw"),$("billie")].forEach(e=>e.hidden=true);$("env").classList.remove("open")}
+}
+setInterval(tick,1000);tick();
+/* interacción */
+$("env").onclick=()=>{$("env").classList.add("open");setTimeout(()=>{$("lw").hidden=false;$("letter").scrollTop=0},1300)};
+$("letter").addEventListener("click",e=>{if(e.target.id==="close"){$("lw").hidden=true;$("stage").hidden=true;openBillie()}else if(e.target.id==="save")saveImg()});
+$("again").onclick=()=>{$("billie").hidden=true;$("lw").hidden=false};
+$("back").onclick=()=>{$("billie").hidden=true};
+/* botón "Abrir ya": se escapa del mouse y del dedo */
+const sk=$("skip"),lab=["Abrir ya","¡Uy, casi!","Aún no se puede","Paciencia…","Mejor espera tu carta","Moonceeee!!!","Ya dejame"];let esc=0,lt=0;
+function flee(e){
+  if(e&&e.cancelable)e.preventDefault();
+  if($("skipw").hidden||Date.now()-lt<200)return;lt=Date.now();
+  const r=sk.getBoundingClientRect(),W=innerWidth,H=innerHeight,w=Math.max(r.width,200),h=r.height;
+  if(!sk.classList.contains("fly")){sk.style.left=r.left+"px";sk.style.top=r.top+"px";sk.classList.add("fly");void sk.offsetWidth}
+  let x,y,k=0;
+  do{x=8+Math.random()*Math.max(0,W-w-16);y=8+Math.random()*Math.max(0,H-h-16);k++}while(k<25&&Math.hypot(x-r.left,y-r.top)<140);
+  sk.style.left=x+"px";sk.style.top=y+"px";
+  sk.textContent=lab[Math.min(lab.length-1,Math.floor(++esc/3))];
+}
+["pointerenter","pointerdown","touchstart","click","focus"].forEach(t=>sk.addEventListener(t,flee,{passive:false}));
+document.addEventListener("pointermove",e=>{const r=sk.getBoundingClientRect();if(r.width&&Math.hypot(e.clientX-(r.left+r.width/2),e.clientY-(r.top+r.height/2))<90)flee()});
+/* volver a leer la carta y descargarla como imagen */
+$("reread").onclick=()=>{$("lw").hidden=false;$("letter").scrollTop=0};
+$("save2").onclick=()=>saveImg();
+async function saveImg(){
+  try{await document.fonts.load('500 44px Caveat','á')}catch(e){}
+  const W=1080,P=96,M=W-2*P,F=44,LH=64,S=30,c=document.createElement("canvas"),x=c.getContext("2d"),fnt=`500 ${F}px Caveat,cursive`;
+  x.font=fnt;const lines=[];
+  C.carta.forEach(par=>{let ln="";par.split(" ").forEach(w=>{const t=ln?ln+" "+w:w;if(x.measureText(t).width>M&&ln){lines.push(ln);ln=w}else ln=t});lines.push(ln,"")});
+  const sig=C.firma.replace(/<br\s*\/?>/gi,"\n").split("\n"),top=S+P,H=Math.round(top+(lines.length+sig.length)*LH+P*.6+S);
+  c.width=W;c.height=H;
+  x.fillStyle="#fffdf5";x.fillRect(0,0,W,H);
+  x.strokeStyle="rgba(42,91,215,.18)";x.lineWidth=2;
+  for(let y=top+16;y<H-S-40;y+=LH){x.beginPath();x.moveTo(P/2,y);x.lineTo(W-P/2,y);x.stroke()}
+  const stripe=y=>{x.save();x.beginPath();x.rect(0,y,W,S);x.clip();const k=["#d6403a","#fff","#2a5bd7","#fff"];
+    for(let i=-2,a=0;i*40<W+60;i++,a++){x.fillStyle=k[a%4];x.beginPath();x.moveTo(i*40,y);x.lineTo(i*40+40,y);x.lineTo(i*40+40-S,y+S);x.lineTo(i*40-S,y+S);x.fill()}x.restore()};
+  stripe(0);stripe(H-S);
+  x.font=fnt;x.fillStyle="#2b2a3a";x.textBaseline="alphabetic";
+  lines.forEach((l,i)=>x.fillText(l,P,top+i*LH));
+  x.textAlign="right";sig.forEach((l,i)=>x.fillText(l,W-P,top+(lines.length+i)*LH));
+  const blob=await new Promise(r=>c.toBlob(r,"image/png")),name=`carta-para-${C.nombre}.png`,f=new File([blob],name,{type:"image/png"});
+  if(matchMedia("(pointer:coarse)").matches&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return}catch(e){if(e.name==="AbortError")return}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+/* escena Billie: letras con fotos que se pueden mover, reproductor y música */
+const stg=$("billie"),sp=$("sp"),au=C.audio?Object.assign(new Audio(C.audio),{loop:true,volume:.6}):null;
+const letters=[...C.nombre.toUpperCase()].filter(c=>c.trim());let zi=60;
+function mkTile(cls,img,txt){const d=document.createElement("div");d.className=cls;if(img)d.style.setProperty("--img",`url("${img}")`);d.textContent=txt;d.addEventListener("pointerdown",drag);stg.append(d);return d}
+const tiles=letters.map((l,i)=>mkTile("tile",C.fotos.length?C.fotos[i%C.fotos.length]:"",l));
+const extras=C.fotos.slice(letters.length).map(f=>mkTile("tile pol",f,""));
+function drag(e){
+  const t=e.currentTarget,r=t.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top;
+  t.setPointerCapture(e.pointerId);t.style.zIndex=++zi;t.classList.add("up");
+  const mv=ev=>{t.style.left=Math.min(innerWidth-r.width,Math.max(0,ev.clientX-ox))+"px";t.style.top=Math.min(innerHeight-r.height,Math.max(0,ev.clientY-oy))+"px"};
+  const up=()=>{t.classList.remove("up");t.removeEventListener("pointermove",mv);t.removeEventListener("pointerup",up);t.removeEventListener("pointercancel",up)};
+  t.addEventListener("pointermove",mv);t.addEventListener("pointerup",up);t.addEventListener("pointercancel",up);e.preventDefault();
+}
+function layout(){
+  const W=innerWidth,H=innerHeight,n=tiles.length||1,s=Math.max(44,Math.min(110,(W-24)/(n*1.12)));
+  stg.style.setProperty("--s",s+"px");
+  const g=s*.12,x0=(W-(n*s+(n-1)*g))/2,y0=H-s-22;
+  tiles.forEach((t,i)=>{t.style.left=x0+i*(s+g)+"px";t.style.top=y0+"px";t.style.transform=`rotate(${(i%2?1:-1)*(1+i%3*1.5)}deg)`;t.style.zIndex=50+i});
+  extras.forEach(t=>{t.style.left=20+Math.random()*Math.max(0,W-s*1.15-40)+"px";t.style.top=60+Math.random()*H*.35+"px";t.style.transform=`rotate(${Math.random()*20-10}deg)`});
+}
+function openBillie(){
+  stg.hidden=false;layout();
+  if(!sp.getAttribute("src"))sp.src=C.spotify;
+  if(au){au.play().catch(()=>{});$("mus").hidden=false;$("mus").textContent="Pausar música"}
+}
+$("reset").onclick=layout;
+$("mus").onclick=()=>{if(au.paused){au.play();$("mus").textContent="Pausar música"}else{au.pause();$("mus").textContent="Poner música"}};
+addEventListener("resize",()=>{if(stg.hidden)return;[...tiles,...extras].forEach(t=>{const r=t.getBoundingClientRect();t.style.left=Math.max(0,Math.min(innerWidth-r.width,r.left))+"px";t.style.top=Math.max(0,Math.min(innerHeight-r.height,r.top))+"px"})});
+/* modo vista previa: abre la página con ?preview */
+if(location.search.includes("preview")){
+  const pv=document.createElement("div");pv.className="pv";pv.innerHTML="<span>Vista previa:</span>";
+  [["Inicio",0],["Mitad",.5],["Casi llega",null],["Sobre",1]].forEach(([n,v])=>{const b=document.createElement("button");b.textContent=n;
+    b.onclick=()=>{const p=v===null?1-12000/(T1-T0):v;skew=T0+p*(T1-T0)-Date.now()+(v===1?1:0);if(v===1){$("env").classList.remove("open");$("lw").hidden=true;$("billie").hidden=true}tick()};pv.append(b)});
+  document.body.append(pv);
+}
+</script>
+</body>
+</html>
